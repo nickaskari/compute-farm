@@ -33,57 +33,62 @@ def uninstall_requirements():
         subprocess.run(["pip", "uninstall", "-y"] + packages)
 
 def run_notebook():
-    """Runs the run.py script as a Jupyter Notebook"""
-    notebook_path = os.path.join(PLAYGROUND_DIR, "run.py")
-    
+    """Executes the run.ipynb Jupyter Notebook safely"""
+    notebook_path = os.path.join(PLAYGROUND_DIR, "run.ipynb")
+
     if not os.path.exists(notebook_path):
-        print("No run.py found. Skipping execution.")
+        print("No run.ipynb found. Skipping execution.")
         return False
 
-    # Convert .py to .ipynb
-    notebook_content = f"""# Auto-generated Notebook\n\n```python\n{open(notebook_path).read()}\n```"""
-    notebook_file = os.path.join(PLAYGROUND_DIR, "run.ipynb")
-    with open(notebook_file, "w") as f:
-        f.write(notebook_content)
-
-    # Run the notebook
-    print(f"Running notebook: {notebook_file}")
-    with open(notebook_file, "r") as f:
-        nb = nbformat.read(f, as_version=4)
-
-    ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
+    print(f"Running notebook: {notebook_path}")
 
     try:
+        # Ensure the file is a valid Jupyter Notebook
+        with open(notebook_path, "r", encoding="utf-8") as f:
+            first_line = f.readline().strip()
+            if not first_line.startswith("{") and not first_line.startswith("["):
+                raise ValueError("The file is not a valid Jupyter Notebook (not JSON format).")
+
+        with open(notebook_path, "r", encoding="utf-8") as f:
+            nb = nbformat.read(f, as_version=4)
+
+        ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
         ep.preprocess(nb, {"metadata": {"path": PLAYGROUND_DIR}})
-        with open(notebook_file, "w") as f:
+
+        with open(notebook_path, "w", encoding="utf-8") as f:
             nbformat.write(nb, f)
+
         print("Notebook execution completed successfully.")
         return True
+
+    except ValueError as ve:
+        print(f"Error: {ve}")
+        return False
     except Exception as e:
         print(f"Notebook execution failed: {e}")
         return False
 
 def clean_up():
-    """Deletes everything in the playground folder except run.py"""
+    """Deletes all files in playground/ except run.ipynb"""
     print("Cleaning up playground folder...")
     for file in os.listdir(PLAYGROUND_DIR):
         file_path = os.path.join(PLAYGROUND_DIR, file)
-        if file != "run.py":
+        if file != "run.ipynb":  # Keep only run.ipynb
             if os.path.isfile(file_path) or os.path.islink(file_path):
                 os.unlink(file_path)
             elif os.path.isdir(file_path):
                 shutil.rmtree(file_path)
 
-def move_run_script():
-    """Moves run.py to results/ and renames it"""
-    run_script_path = os.path.join(PLAYGROUND_DIR, "run.py")
+def move_notebook():
+    """Moves run.ipynb to results/ and renames it"""
+    notebook_path = os.path.join(PLAYGROUND_DIR, "run.ipynb")
 
-    if os.path.exists(run_script_path):
-        new_name = input("Enter new name for run.py (without extension): ") + ".py"
+    if os.path.exists(notebook_path):
+        new_name = input("Enter new name for run.ipynb (without extension): ") + ".ipynb"
         new_path = os.path.join(RESULTS_DIR, new_name)
         
-        shutil.move(run_script_path, new_path)
-        print(f"Moved run.py to {new_path}")
+        shutil.move(notebook_path, new_path)
+        print(f"Moved run.ipynb to {new_path}")
         return new_path
     return None
 
@@ -91,7 +96,7 @@ def push_results():
     """Commits and pushes changes to GitHub"""
     print("Pushing changes to GitHub...")
     subprocess.run(["git", "add", "."], cwd=REPO_DIR)
-    subprocess.run(["git", "commit", "-m", "Processed and updated run.py"], cwd=REPO_DIR)
+    subprocess.run(["git", "commit", "-m", "Processed and updated run.ipynb"], cwd=REPO_DIR)
     subprocess.run(["git", "push", "origin", BRANCH], cwd=REPO_DIR)
     print("Changes pushed successfully.")
 
@@ -111,7 +116,7 @@ def check_for_changes():
             if run_notebook():
                 uninstall_requirements()
                 clean_up()
-                renamed_file = move_run_script()
+                renamed_file = move_notebook()
                 if renamed_file:
                     push_results()  # Push changes only if something was processed
             
