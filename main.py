@@ -11,6 +11,7 @@ REPO_DIR = os.path.dirname(os.path.abspath(__file__))  # Root of the repo
 PLAYGROUND_DIR = os.path.join(REPO_DIR, "playground")  # Where the notebook is
 RESULTS_DIR = os.path.join(REPO_DIR, "results")  # Where to save processed notebooks
 BRANCH = "main"
+ROOT_REQUIREMENTS = os.path.join(REPO_DIR, "requirements.txt")  # Global requirements file
 
 def pull_repo():
     """Pull the latest changes from GitHub"""
@@ -21,17 +22,23 @@ def install_requirements():
     """Installs the packages from the playground/requirements.txt"""
     req_file = os.path.join(PLAYGROUND_DIR, "requirements.txt")
     if os.path.exists(req_file):
-        print("Installing dependencies...")
+        print("Installing dependencies from playground/requirements.txt...")
         subprocess.run(["pip", "install", "-r", req_file])
 
 def uninstall_requirements():
     """Uninstalls the packages listed in playground/requirements.txt"""
     req_file = os.path.join(PLAYGROUND_DIR, "requirements.txt")
     if os.path.exists(req_file):
-        print("Uninstalling dependencies...")
+        print("Uninstalling dependencies from playground/requirements.txt...")
         with open(req_file, "r") as f:
             packages = f.read().splitlines()
         subprocess.run(["pip", "uninstall", "-y"] + packages)
+
+def reinstall_root_requirements():
+    """Reinstalls the global requirements from the root `requirements.txt`"""
+    if os.path.exists(ROOT_REQUIREMENTS):
+        print("Reinstalling global requirements from root requirements.txt...")
+        subprocess.run(["pip", "install", "-r", ROOT_REQUIREMENTS])
 
 def run_notebook():
     """Executes the run.ipynb Jupyter Notebook safely"""
@@ -117,6 +124,7 @@ def check_for_changes():
             
             if run_notebook():
                 uninstall_requirements()
+                reinstall_root_requirements()  # Reinstall global requirements at the end
                 clean_up()
                 renamed_file = move_notebook()
                 if renamed_file:
@@ -126,4 +134,3 @@ def check_for_changes():
 
 if __name__ == "__main__":
     check_for_changes()
-
