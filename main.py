@@ -3,6 +3,7 @@ import subprocess
 import time
 import shutil
 import nbformat
+from datetime import datetime
 from nbconvert.preprocessors import ExecutePreprocessor
 
 # Configuration
@@ -80,11 +81,12 @@ def clean_up():
                 shutil.rmtree(file_path)
 
 def move_notebook():
-    """Moves run.ipynb to results/ and renames it"""
+    """Moves run.ipynb to results/ and renames it with timestamp"""
     notebook_path = os.path.join(PLAYGROUND_DIR, "run.ipynb")
 
     if os.path.exists(notebook_path):
-        new_name = input("Enter new name for run.ipynb (without extension): ") + ".ipynb"
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # Format: YYYYMMDD_HHMMSS
+        new_name = f"run_{timestamp}.ipynb"
         new_path = os.path.join(RESULTS_DIR, new_name)
         
         shutil.move(notebook_path, new_path)
@@ -124,3 +126,4 @@ def check_for_changes():
 
 if __name__ == "__main__":
     check_for_changes()
+
