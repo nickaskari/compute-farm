@@ -181,15 +181,15 @@ class Discriminator(nn.Module):
             nn.Linear(int(np.prod(input_shape)) + 10, 1000),
             nn.BatchNorm1d(1000),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout(0.7),
+            nn.Dropout(0.1),
             nn.Linear(1000, 1000),
             nn.BatchNorm1d(1000),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout(0.7),
-            nn.Linear(1000, 1),
+            nn.Dropout(0.1),
+            nn.Linear(1000, 1000),
             nn.BatchNorm1d(1000),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout(0.7),
+            nn.Dropout(0.1),
             nn.Linear(1000, 1)
         )
 
