@@ -324,3 +324,6 @@ subprocess.CalledProcessError: Command '['git', 'pull', 'origin', 'main']' retur
 [2025-02-25 22:47:50] - New changes detected, processing...
 [2025-02-25 23:41:19] - Notebook execution completed successfully.
 [2025-02-25 23:41:19] - Moved notebook to C:\Users\nicka\compute-farm\results\run_1_success_20250225_234119.ipynb (status: success, includes outputs)
+[2025-02-25 23:41:22] - Waiting 99 seconds before pushing to avoid conflicts.
+[2025-02-25 23:43:01] - Git push failed (attempt 1): Command '['git', 'pull', '--rebase', 'origin', 'main']' returned non-zero exit status 128.
+[2025-02-25 23:43:01] - Retrying push after 82 seconds...
