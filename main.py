@@ -7,6 +7,9 @@ import traceback
 from dotenv import load_dotenv
 from datetime import datetime
 from nbconvert.preprocessors import ExecutePreprocessor
+import random
+import time
+import subprocess
 
 # Load environment variables from .env.local
 load_dotenv(".env.local")
@@ -110,8 +113,9 @@ def push_log():
     except subprocess.CalledProcessError as e:
         print(f"Error pushing log file: {e}")
 
+
 def push_results():
-    """Commits and safely pushes changes to GitHub, handling concurrent updates."""
+    """Commits and safely pushes changes to GitHub, handling concurrent updates with a random delay."""
     max_retries = 3
     retries = 0
 
@@ -120,6 +124,12 @@ def push_results():
             print("Preparing changes for Git push...")
             subprocess.run(["git", "add", "."], cwd=REPO_DIR, check=True)
             subprocess.run(["git", "commit", "-m", f"Machine {MACHINE_NUMBER}: Processed and updated run.ipynb"], cwd=REPO_DIR, check=True)
+
+            # Introduce a random delay between 1 and 3 minutes (60 to 180 seconds)
+            delay = random.randint(60, 180)
+            print(f"Random delay before pushing: {delay} seconds...")
+            write_log(f"Waiting {delay} seconds before pushing to avoid conflicts.")
+            time.sleep(delay)
 
             print("Pulling latest changes before pushing...")
             subprocess.run(["git", "pull", "--rebase", "origin", BRANCH], cwd=REPO_DIR, check=True)  # Avoids merge conflicts
@@ -138,8 +148,10 @@ def push_results():
             write_log(error_message)
 
             if retries < max_retries:
-                print("Retrying push...")
-                time.sleep(5)  # Short delay before retrying
+                retry_delay = random.randint(30, 90)  # Add a random retry delay (30s to 1.5 mins)
+                print(f"Retrying push after {retry_delay} seconds...")
+                write_log(f"Retrying push after {retry_delay} seconds...")
+                time.sleep(retry_delay)
             else:
                 print("Max retries reached. Skipping Git push for now.")
                 write_log("Max retries reached. Skipping Git push.")
