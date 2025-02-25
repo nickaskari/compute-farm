@@ -3,49 +3,36 @@ import subprocess
 import time
 import shutil
 import nbformat
+from dotenv import load_dotenv
 from datetime import datetime
 from nbconvert.preprocessors import ExecutePreprocessor
 
+# Load environment variables from .env.local
+load_dotenv(".env.local")
+MACHINE_NUMBER = os.getenv("MACHINE_NUMBER")
+
 # Configuration
 REPO_DIR = os.path.dirname(os.path.abspath(__file__))  # Root of the repo
-PLAYGROUND_DIR = os.path.join(REPO_DIR, "playground")  # Where the notebook is
+MACHINE_FOLDER = os.path.join(REPO_DIR, f"machine_{MACHINE_NUMBER}")  # Machine-specific folder
 RESULTS_DIR = os.path.join(REPO_DIR, "results")  # Where to save processed notebooks
 BRANCH = "main"
 ROOT_REQUIREMENTS = os.path.join(REPO_DIR, "requirements.txt")  # Global requirements file
 
 def pull_repo():
-    """Pull the latest changes from GitHub"""
+    """Pull the latest changes from GitHub and install root dependencies"""
     print("Pulling latest changes from GitHub...")
     subprocess.run(["git", "pull", "origin", BRANCH], cwd=REPO_DIR)
 
-def install_requirements():
-    """Installs the packages from the playground/requirements.txt"""
-    req_file = os.path.join(PLAYGROUND_DIR, "requirements.txt")
-    if os.path.exists(req_file):
-        print("Installing dependencies from playground/requirements.txt...")
-        subprocess.run(["pip", "install", "-r", req_file])
-
-def uninstall_requirements():
-    """Uninstalls the packages listed in playground/requirements.txt"""
-    req_file = os.path.join(PLAYGROUND_DIR, "requirements.txt")
-    if os.path.exists(req_file):
-        print("Uninstalling dependencies from playground/requirements.txt...")
-        with open(req_file, "r") as f:
-            packages = f.read().splitlines()
-        subprocess.run(["pip", "uninstall", "-y"] + packages)
-
-def reinstall_root_requirements():
-    """Reinstalls the global requirements from the root `requirements.txt`"""
     if os.path.exists(ROOT_REQUIREMENTS):
-        print("Reinstalling global requirements from root requirements.txt...")
+        print("Installing/updating global requirements from root requirements.txt...")
         subprocess.run(["pip", "install", "-r", ROOT_REQUIREMENTS])
 
 def run_notebook():
-    """Executes the run.ipynb Jupyter Notebook safely"""
-    notebook_path = os.path.join(PLAYGROUND_DIR, "run.ipynb")
+    """Executes the run.ipynb Jupyter Notebook if it exists"""
+    notebook_path = os.path.join(MACHINE_FOLDER, "run.ipynb")
 
     if not os.path.exists(notebook_path):
-        print("No run.ipynb found. Skipping execution.")
+        print(f"No run.ipynb found in {MACHINE_FOLDER}. Going back to listening...")
         return False
 
     print(f"Running notebook: {notebook_path}")
@@ -61,7 +48,7 @@ def run_notebook():
             nb = nbformat.read(f, as_version=4)
 
         ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
-        ep.preprocess(nb, {"metadata": {"path": PLAYGROUND_DIR}})
+        ep.preprocess(nb, {"metadata": {"path": MACHINE_FOLDER}})
 
         with open(notebook_path, "w", encoding="utf-8") as f:
             nbformat.write(nb, f)
@@ -76,24 +63,13 @@ def run_notebook():
         print(f"Notebook execution failed: {e}")
         return False
 
-def clean_up():
-    """Deletes all files in playground/ except run.ipynb"""
-    print("Cleaning up playground folder...")
-    for file in os.listdir(PLAYGROUND_DIR):
-        file_path = os.path.join(PLAYGROUND_DIR, file)
-        if file != "run.ipynb":  # Keep only run.ipynb
-            if os.path.isfile(file_path) or os.path.islink(file_path):
-                os.unlink(file_path)
-            elif os.path.isdir(file_path):
-                shutil.rmtree(file_path)
-
 def move_notebook():
     """Moves run.ipynb to results/ and renames it with timestamp"""
-    notebook_path = os.path.join(PLAYGROUND_DIR, "run.ipynb")
+    notebook_path = os.path.join(MACHINE_FOLDER, "run.ipynb")
 
     if os.path.exists(notebook_path):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # Format: YYYYMMDD_HHMMSS
-        new_name = f"run_{timestamp}.ipynb"
+        new_name = f"run_{MACHINE_NUMBER}_{timestamp}.ipynb"
         new_path = os.path.join(RESULTS_DIR, new_name)
         
         shutil.move(notebook_path, new_path)
@@ -105,12 +81,12 @@ def push_results():
     """Commits and pushes changes to GitHub"""
     print("Pushing changes to GitHub...")
     subprocess.run(["git", "add", "."], cwd=REPO_DIR)
-    subprocess.run(["git", "commit", "-m", "Processed and updated run.ipynb"], cwd=REPO_DIR)
+    subprocess.run(["git", "commit", "-m", f"Machine {MACHINE_NUMBER}: Processed and updated run.ipynb"], cwd=REPO_DIR)
     subprocess.run(["git", "push", "origin", BRANCH], cwd=REPO_DIR)
     print("Changes pushed successfully.")
 
 def check_for_changes():
-    """Checks if there are any new changes in the playground folder"""
+    """Checks if there are any new changes in the repository"""
     last_commit = None
     while True:
         subprocess.run(["git", "fetch"], cwd=REPO_DIR)
@@ -120,15 +96,11 @@ def check_for_changes():
             print("New changes detected! Processing...")
             last_commit = new_commit
             pull_repo()
-            install_requirements()
-            
+
             if run_notebook():
-                uninstall_requirements()
-                reinstall_root_requirements()  # Reinstall global requirements at the end
-                clean_up()
                 renamed_file = move_notebook()
                 if renamed_file:
-                    push_results()  # Push changes only if something was processed
+                    push_results()  # Push changes only if a notebook was processed
             
         time.sleep(30)  # Check every 30 seconds
 
