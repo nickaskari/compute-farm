@@ -3,6 +3,7 @@ import subprocess
 import time
 import shutil
 import nbformat
+import traceback
 from dotenv import load_dotenv
 from datetime import datetime
 from nbconvert.preprocessors import ExecutePreprocessor
@@ -20,10 +21,18 @@ ROOT_REQUIREMENTS = os.path.join(REPO_DIR, "requirements.txt")  # Global require
 LOG_FILE = os.path.join(MACHINE_FOLDER, "log.txt")  # Log file inside machine folder
 
 def write_log(message):
-    """Write errors or logs to log.txt inside the machine folder."""
+    """Write logs to log.txt inside the machine folder."""
     timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
     with open(LOG_FILE, "a", encoding="utf-8") as log:
-        log.write(f"{timestamp} {message}\n")
+        log.write(f"{timestamp} - {message}\n")
+
+def log_exception(e):
+    """Log detailed error traceback and move the notebook to results."""
+    error_message = f"Exception occurred:\n{traceback.format_exc()}"
+    print(error_message)
+    write_log(error_message)
+    move_notebook(error_occurred=True)  # Move the notebook even if execution failed
+    push_log()
 
 def pull_repo():
     """Pull the latest changes from GitHub and install root dependencies"""
@@ -36,12 +45,10 @@ def pull_repo():
             subprocess.run(["pip", "install", "-r", ROOT_REQUIREMENTS], check=True)
     
     except subprocess.CalledProcessError as e:
-        error_message = f"Error pulling repo or installing dependencies: {e}"
-        print(error_message)
-        write_log(error_message)
+        log_exception(e)
 
 def run_notebook():
-    """Executes the run.ipynb Jupyter Notebook if it exists"""
+    """Executes the run.ipynb Jupyter Notebook and saves outputs"""
     notebook_path = os.path.join(MACHINE_FOLDER, "run.ipynb")
 
     if not os.path.exists(notebook_path):
@@ -53,47 +60,55 @@ def run_notebook():
     print(f"Running notebook: {notebook_path}")
 
     try:
-        # Ensure the file is a valid Jupyter Notebook
-        with open(notebook_path, "r", encoding="utf-8") as f:
-            first_line = f.readline().strip()
-            if not first_line.startswith("{") and not first_line.startswith("["):
-                raise ValueError("The file is not a valid Jupyter Notebook (not JSON format).")
-
+        # Load the notebook
         with open(notebook_path, "r", encoding="utf-8") as f:
             nb = nbformat.read(f, as_version=4)
 
         ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
+
+        # Execute the notebook and store outputs
         ep.preprocess(nb, {"metadata": {"path": MACHINE_FOLDER}})
 
+        # Save the executed notebook (WITH OUTPUTS)
         with open(notebook_path, "w", encoding="utf-8") as f:
             nbformat.write(nb, f)
 
         print("Notebook execution completed successfully.")
+        write_log("Notebook execution completed successfully.")
+        move_notebook(error_occurred=False)  # Move successfully executed notebook
         return True
 
-    except ValueError as ve:
-        error_message = f"Notebook validation error: {ve}"
     except Exception as e:
-        error_message = f"Notebook execution failed: {e}"
-    
-    print(error_message)
-    write_log(error_message)
-    return False
+        log_exception(e)
+        return False
 
-def move_notebook():
-    """Moves run.ipynb to results/ and renames it with timestamp"""
+def move_notebook(error_occurred=False):
+    """Moves run.ipynb to results/ and renames it, ensuring outputs are saved."""
     notebook_path = os.path.join(MACHINE_FOLDER, "run.ipynb")
 
     if os.path.exists(notebook_path):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # Format: YYYYMMDD_HHMMSS
-        new_name = f"run_{MACHINE_NUMBER}_{timestamp}.ipynb"
+        status = "error" if error_occurred else "success"
+        new_name = f"run_{MACHINE_NUMBER}_{status}_{timestamp}.ipynb"
         new_path = os.path.join(RESULTS_DIR, new_name)
         
         shutil.move(notebook_path, new_path)
-        print(f"Moved run.ipynb to {new_path}")
-        write_log(f"Moved processed notebook to {new_path}")
+        print(f"Moved run.ipynb to {new_path} (Includes Outputs)")
+        write_log(f"Moved notebook to {new_path} (status: {status}, includes outputs)")
         return new_path
     return None
+
+def push_log():
+    """Pushes the log file to GitHub so errors can be tracked remotely"""
+    try:
+        print("Pushing log file to GitHub...")
+        subprocess.run(["git", "add", LOG_FILE], cwd=REPO_DIR, check=True)
+        subprocess.run(["git", "commit", "-m", f"Machine {MACHINE_NUMBER}: Updated log.txt"], cwd=REPO_DIR, check=True)
+        subprocess.run(["git", "push", "origin", BRANCH], cwd=REPO_DIR, check=True)
+        print("Log file pushed successfully.")
+        write_log("Log file pushed successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"Error pushing log file: {e}")
 
 def push_results():
     """Commits and pushes changes to GitHub"""
@@ -105,9 +120,7 @@ def push_results():
         print("Changes pushed successfully.")
         write_log("Changes pushed successfully.")
     except subprocess.CalledProcessError as e:
-        error_message = f"Error pushing to GitHub: {e}"
-        print(error_message)
-        write_log(error_message)
+        log_exception(e)
 
 def check_for_changes():
     """Checks if there are any new changes in the repository"""
@@ -124,14 +137,10 @@ def check_for_changes():
                 pull_repo()
 
                 if run_notebook():
-                    renamed_file = move_notebook()
-                    if renamed_file:
-                        push_results()  # Push changes only if a notebook was processed
+                    push_results()  # Push changes only if a notebook was processed
             
         except subprocess.CalledProcessError as e:
-            error_message = f"Error checking for changes: {e}"
-            print(error_message)
-            write_log(error_message)
+            log_exception(e)
         
         time.sleep(30)  # Check every 30 seconds
 
