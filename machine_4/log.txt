@@ -114,3 +114,13 @@ Here is a preview of the cell contents:
 
 
 [2025-02-25 21:44:24] - Moved notebook to C:\Users\nicka\compute-farm\results\run_4_error_20250225_214424.ipynb (status: error, includes outputs)
+[2025-02-25 21:44:57] - New changes detected, processing...
+[2025-02-25 21:47:59] - Exception occurred:
+Traceback (most recent call last):
+  File "C:\Users\nicka\compute-farm\main.py", line 41, in pull_repo
+    """Pull the latest changes from GitHub and install root dependencies"""
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['git', 'pull', 'origin', 'main']' returned non-zero exit status 1.
+
