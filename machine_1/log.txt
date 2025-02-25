@@ -118,3 +118,62 @@ File [1;32m~\compute-farm\packages\Lib\site-packages\pandas\io\common.py:873[0
 
 
 [2025-02-25 20:00:23] - Moved notebook to C:\Users\nicka\compute-farm\results\run_1_error_20250225_200023.ipynb (status: error, includes outputs)
+[2025-02-25 20:00:26] - Log file pushed successfully.
+[2025-02-25 20:00:57] - New changes detected, processing...
+[2025-02-25 20:01:01] - No run.ipynb found in C:\Users\nicka\compute-farm\machine_1. Going back to listening...
+[2025-02-25 20:02:35] - New changes detected, processing...
+[2025-02-25 20:02:48] - Exception occurred:
+Traceback (most recent call last):
+  File "C:\Users\nicka\compute-farm\main.py", line 70, in run_notebook
+    ep.preprocess(nb, {"metadata": {"path": MACHINE_FOLDER}})
+  File "C:\Users\nicka\compute-farm\packages\Lib\site-packages\nbconvert\preprocessors\execute.py", line 103, in preprocess
+    self.preprocess_cell(cell, resources, index)
+  File "C:\Users\nicka\compute-farm\packages\Lib\site-packages\nbconvert\preprocessors\execute.py", line 124, in preprocess_cell
+    cell = self.execute_cell(cell, index, store_history=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nicka\compute-farm\packages\Lib\site-packages\jupyter_core\utils\__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\nicka\compute-farm\packages\Lib\site-packages\nbclient\client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "C:\Users\nicka\compute-farm\packages\Lib\site-packages\nbclient\client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+from gan5 import GAN5
+from gan6 import GAN6
+from gan7 import GAN7
+from gan8 import GAN8
+from gan9 import GAN9
+from gan10 import GAN10
+
+
+for asset_name in returns_df.columns:
+    print(f"Training WGAN for {asset_name}...")
+    asset_returns = returns_df[asset_name]
+    
+    # Create WGAN instance for the current asset
+    gan = GAN10(asset_returns, asset_name)
+    
+    # Train WGAN for this asset
+    gan.train()
+    
+    print(f"Finished training WGAN for {asset_name}.\n")
+
+------------------
+
+
+[1;31m---------------------------------------------------------------------------[0m
+[1;31mModuleNotFoundError[0m                       Traceback (most recent call last)
+Cell [1;32mIn[6], line 1[0m
+[1;32m----> 1[0m [38;5;28;01mfrom[39;00m[38;5;250m [39m[38;5;21;01mgan5[39;00m[38;5;250m [39m[38;5;28;01mimport[39;00m GAN5
+[0;32m      2[0m [38;5;28;01mfrom[39;00m[38;5;250m [39m[38;5;21;01mgan6[39;00m[38;5;250m [39m[38;5;28;01mimport[39;00m GAN6
+[0;32m      3[0m [38;5;28;01mfrom[39;00m[38;5;250m [39m[38;5;21;01mgan7[39;00m[38;5;250m [39m[38;5;28;01mimport[39;00m GAN7
+
+[1;31mModuleNotFoundError[0m: No module named 'gan5'
+
+
+[2025-02-25 20:02:48] - Moved notebook to C:\Users\nicka\compute-farm\results\run_1_error_20250225_200248.ipynb (status: error, includes outputs)
