@@ -50,3 +50,13 @@ Here is a preview of the cell contents:
 
 
 [2025-02-25 21:20:49] - Moved notebook to C:\Users\nicka\compute-farm\results\run_4_error_20250225_212049.ipynb (status: error, includes outputs)
+[2025-02-25 21:21:24] - New changes detected, processing...
+[2025-02-25 21:24:14] - New changes detected, processing...
+[2025-02-25 21:24:14] - Exception occurred:
+Traceback (most recent call last):
+  File "C:\Users\nicka\compute-farm\main.py", line 41, in pull_repo
+    subprocess.run(["git", "pull", "origin", BRANCH], cwd=REPO_DIR, check=True)
+  File "C:\Program Files\Python312\Lib\subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['git', 'pull', 'origin', 'main']' returned non-zero exit status 128.
+
