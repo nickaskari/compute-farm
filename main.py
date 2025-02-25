@@ -67,7 +67,7 @@ def run_notebook():
         with open(notebook_path, "r", encoding="utf-8") as f:
             nb = nbformat.read(f, as_version=4)
 
-        ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
+        ep = ExecutePreprocessor(timeout=5000, kernel_name="python3")
 
         # Execute the notebook and store outputs
         ep.preprocess(nb, {"metadata": {"path": MACHINE_FOLDER}})
@@ -113,7 +113,6 @@ def push_log():
     except subprocess.CalledProcessError as e:
         print(f"Error pushing log file: {e}")
 
-
 def push_results():
     """Commits and safely pushes changes to GitHub, handling concurrent updates with a random delay."""
     max_retries = 3
@@ -132,7 +131,7 @@ def push_results():
             time.sleep(delay)
 
             print("Pulling latest changes before pushing...")
-            subprocess.run(["git", "pull", "--rebase", "origin", BRANCH], cwd=REPO_DIR, check=True)  # Avoids merge conflicts
+            subprocess.run(["git", "pull", "--rebase", "origin", BRANCH], cwd=REPO_DIR, check=True)
 
             print("Pushing changes to GitHub...")
             subprocess.run(["git", "push", "origin", BRANCH], cwd=REPO_DIR, check=True)
@@ -147,6 +146,16 @@ def push_results():
             print(error_message)
             write_log(error_message)
 
+            if "Please commit your changes or stash them before you merge" in str(e):
+                print("Merge conflict detected. Stashing changes and retrying...")
+                subprocess.run(["git", "stash"], cwd=REPO_DIR)
+                subprocess.run(["git", "pull", "--rebase", "origin", BRANCH], cwd=REPO_DIR)
+                subprocess.run(["git", "stash", "pop"], cwd=REPO_DIR)
+
+            elif "fatal: cannot do a partial commit during a merge" in str(e):
+                print("Resetting merge conflict...")
+                subprocess.run(["git", "merge", "--abort"], cwd=REPO_DIR)
+
             if retries < max_retries:
                 retry_delay = random.randint(30, 90)  # Add a random retry delay (30s to 1.5 mins)
                 print(f"Retrying push after {retry_delay} seconds...")
@@ -156,6 +165,7 @@ def push_results():
                 print("Max retries reached. Skipping Git push for now.")
                 write_log("Max retries reached. Skipping Git push.")
                 return
+
 
 
 def check_for_changes():
