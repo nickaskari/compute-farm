@@ -25,7 +25,7 @@ class GAN10:
         parser.add_argument("--batch_size", type=int, default=128, help="batch size")
         parser.add_argument("--lr_g", type=float, default=0.0002, help="learning rate generator")
         parser.add_argument("--lr_d", type=float, default=0.00005, help="learning rate discriminator")
-        parser.add_argument("--latent_dim", type=int, default=500, help="latent space size")
+        parser.add_argument("--latent_dim", type=int, default=1000, help="latent space size")
         parser.add_argument("--window_size", type=int, default=252, help="rolling window")
         
         opt, _ = parser.parse_known_args()
