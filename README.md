@@ -11,6 +11,11 @@ Compute Automation NTNU - Finanssal
 ```sh
 python -m venv packages 
 ```
+
+```sh
+.\packages\Scripts\activate
+```
+
 ```sh
 pip freeze > requirements.txt
 ```
