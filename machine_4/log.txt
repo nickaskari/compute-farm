@@ -124,3 +124,4 @@ Traceback (most recent call last):
     raise CalledProcessError(retcode, process.args,
 subprocess.CalledProcessError: Command '['git', 'pull', 'origin', 'main']' returned non-zero exit status 1.
 
+[2025-02-25 21:48:02] - No run.ipynb found in C:\Users\nicka\compute-farm\machine_4. Going back to listening...
