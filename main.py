@@ -111,16 +111,40 @@ def push_log():
         print(f"Error pushing log file: {e}")
 
 def push_results():
-    """Commits and pushes changes to GitHub"""
-    try:
-        print("Pushing changes to GitHub...")
-        subprocess.run(["git", "add", "."], cwd=REPO_DIR, check=True)
-        subprocess.run(["git", "commit", "-m", f"Machine {MACHINE_NUMBER}: Processed and updated run.ipynb"], cwd=REPO_DIR, check=True)
-        subprocess.run(["git", "push", "origin", BRANCH], cwd=REPO_DIR, check=True)
-        print("Changes pushed successfully.")
-        write_log("Changes pushed successfully.")
-    except subprocess.CalledProcessError as e:
-        log_exception(e)
+    """Commits and safely pushes changes to GitHub, handling concurrent updates."""
+    max_retries = 3
+    retries = 0
+
+    while retries < max_retries:
+        try:
+            print("Preparing changes for Git push...")
+            subprocess.run(["git", "add", "."], cwd=REPO_DIR, check=True)
+            subprocess.run(["git", "commit", "-m", f"Machine {MACHINE_NUMBER}: Processed and updated run.ipynb"], cwd=REPO_DIR, check=True)
+
+            print("Pulling latest changes before pushing...")
+            subprocess.run(["git", "pull", "--rebase", "origin", BRANCH], cwd=REPO_DIR, check=True)  # Avoids merge conflicts
+
+            print("Pushing changes to GitHub...")
+            subprocess.run(["git", "push", "origin", BRANCH], cwd=REPO_DIR, check=True)
+
+            print("Changes pushed successfully.")
+            write_log("Changes pushed successfully.")
+            return  # Exit function on success
+
+        except subprocess.CalledProcessError as e:
+            retries += 1
+            error_message = f"Git push failed (attempt {retries}): {e}"
+            print(error_message)
+            write_log(error_message)
+
+            if retries < max_retries:
+                print("Retrying push...")
+                time.sleep(5)  # Short delay before retrying
+            else:
+                print("Max retries reached. Skipping Git push for now.")
+                write_log("Max retries reached. Skipping Git push.")
+                return
+
 
 def check_for_changes():
     """Checks if there are any new changes in the repository"""
