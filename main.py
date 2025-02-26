@@ -120,18 +120,27 @@ def push_results():
 
     while retries < max_retries:
         try:
+            print("Preparing log file commit before push...")
+            subprocess.run(["git", "add", LOG_FILE], cwd=REPO_DIR, check=True)
+            subprocess.run(["git", "commit", "-m", f"Machine {MACHINE_NUMBER}: Updated log.txt"], cwd=REPO_DIR, check=True)
+
             print("Preparing changes for Git push...")
             subprocess.run(["git", "add", "."], cwd=REPO_DIR, check=True)
             subprocess.run(["git", "commit", "-m", f"Machine {MACHINE_NUMBER}: Processed and updated run.ipynb"], cwd=REPO_DIR, check=True)
 
-            # Introduce a random delay between 1 and 3 minutes (60 to 180 seconds)
-            delay = random.randint(60, 180)
+            delay = random.randint(0, 100)
             print(f"Random delay before pushing: {delay} seconds...")
             write_log(f"Waiting {delay} seconds before pushing to avoid conflicts.")
             time.sleep(delay)
 
+            print("Stashing unstaged changes before pulling...")
+            subprocess.run(["git", "stash"], cwd=REPO_DIR, check=True)  # Save uncommitted changes
+
             print("Pulling latest changes before pushing...")
             subprocess.run(["git", "pull", "--rebase", "origin", BRANCH], cwd=REPO_DIR, check=True)
+
+            print("Restoring stashed changes...")
+            subprocess.run(["git", "stash", "pop"], cwd=REPO_DIR, check=True)  # Restore changes
 
             print("Pushing changes to GitHub...")
             subprocess.run(["git", "push", "origin", BRANCH], cwd=REPO_DIR, check=True)
@@ -146,18 +155,8 @@ def push_results():
             print(error_message)
             write_log(error_message)
 
-            if "Please commit your changes or stash them before you merge" in str(e):
-                print("Merge conflict detected. Stashing changes and retrying...")
-                subprocess.run(["git", "stash"], cwd=REPO_DIR)
-                subprocess.run(["git", "pull", "--rebase", "origin", BRANCH], cwd=REPO_DIR)
-                subprocess.run(["git", "stash", "pop"], cwd=REPO_DIR)
-
-            elif "fatal: cannot do a partial commit during a merge" in str(e):
-                print("Resetting merge conflict...")
-                subprocess.run(["git", "merge", "--abort"], cwd=REPO_DIR)
-
             if retries < max_retries:
-                retry_delay = random.randint(30, 90)  # Add a random retry delay (30s to 1.5 mins)
+                retry_delay = random.randint(0, 30)  # Add a random retry delay (30s to 1.5 mins)
                 print(f"Retrying push after {retry_delay} seconds...")
                 write_log(f"Retrying push after {retry_delay} seconds...")
                 time.sleep(retry_delay)
@@ -165,7 +164,6 @@ def push_results():
                 print("Max retries reached. Skipping Git push for now.")
                 write_log("Max retries reached. Skipping Git push.")
                 return
-
 
 
 def check_for_changes():
