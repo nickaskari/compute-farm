@@ -14,7 +14,7 @@ from sklearn.preprocessing import PowerTransformer
 
 
 class GAN10:
-    def __init__(self, returns_df, asset_name, lambda_decay=0.8):
+    def __init__(self, returns_df, asset_name, lambda_decay=0.99):
         self.returns_df = returns_df
         self.asset_name = asset_name
         self.lambda_decay = lambda_decay  # Stronger recency bias
@@ -210,14 +210,14 @@ class Discriminator(nn.Module):
             nn.Linear(int(np.prod(input_shape)) + 10, 500),
             nn.BatchNorm1d(500),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout(0.9),
+            nn.Dropout(0.5),
             nn.Linear(500, 500),
             nn.BatchNorm1d(500),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout(0.9),
+            nn.Dropout(0.5),
             nn.Linear(500, 500),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout(0.9),
+            nn.Dropout(0.5),
             nn.Linear(500, 1)
         )
 
