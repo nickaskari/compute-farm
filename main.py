@@ -114,27 +114,24 @@ def push_log():
         print(f"Error pushing log file: {e}")
 
 def push_results():
-    """Commits and safely pushes changes to GitHub, handling concurrent updates with a random delay."""
+    """Commits and safely pushes all changes to GitHub, ensuring logs and notebook moves are tracked."""
     max_retries = 3
     retries = 0
 
     while retries < max_retries:
         try:
-            print("Preparing log file commit before push...")
-            subprocess.run(["git", "add", LOG_FILE], cwd=REPO_DIR, check=True)
-            subprocess.run(["git", "commit", "-m", f"Machine {MACHINE_NUMBER}: Updated log.txt"], cwd=REPO_DIR, check=True)
+            print("Committing all changes before push...")
+            subprocess.run(["git", "add", "."], cwd=REPO_DIR, check=True)  # Stage ALL changes
+            subprocess.run(["git", "commit", "-m", f"Machine {MACHINE_NUMBER}: Updated logs and notebook"], cwd=REPO_DIR, check=True)
 
-            print("Preparing changes for Git push...")
-            subprocess.run(["git", "add", "."], cwd=REPO_DIR, check=True)
-            subprocess.run(["git", "commit", "-m", f"Machine {MACHINE_NUMBER}: Processed and updated run.ipynb"], cwd=REPO_DIR, check=True)
-
-            delay = random.randint(0, 100)
+            # Introduce a random delay between 1 and 3 minutes (60 to 180 seconds)
+            delay = random.randint(60, 180)
             print(f"Random delay before pushing: {delay} seconds...")
             write_log(f"Waiting {delay} seconds before pushing to avoid conflicts.")
             time.sleep(delay)
 
             print("Stashing unstaged changes before pulling...")
-            subprocess.run(["git", "stash"], cwd=REPO_DIR, check=True)  # Save uncommitted changes
+            subprocess.run(["git", "stash"], cwd=REPO_DIR, check=True)  # Temporarily save uncommitted changes
 
             print("Pulling latest changes before pushing...")
             subprocess.run(["git", "pull", "--rebase", "origin", BRANCH], cwd=REPO_DIR, check=True)
@@ -142,7 +139,7 @@ def push_results():
             print("Restoring stashed changes...")
             subprocess.run(["git", "stash", "pop"], cwd=REPO_DIR, check=True)  # Restore changes
 
-            print("Pushing changes to GitHub...")
+            print("Pushing all changes to GitHub...")
             subprocess.run(["git", "push", "origin", BRANCH], cwd=REPO_DIR, check=True)
 
             print("Changes pushed successfully.")
@@ -155,8 +152,13 @@ def push_results():
             print(error_message)
             write_log(error_message)
 
+            if "Please commit your changes or stash them before you merge" in str(e):
+                print("Forcing commit of unstaged changes...")
+                subprocess.run(["git", "add", "."], cwd=REPO_DIR)
+                subprocess.run(["git", "commit", "-m", "Auto-commit unstaged changes"], cwd=REPO_DIR)
+
             if retries < max_retries:
-                retry_delay = random.randint(0, 30)  # Add a random retry delay (30s to 1.5 mins)
+                retry_delay = random.randint(30, 90)  # Add a random retry delay (30s to 1.5 mins)
                 print(f"Retrying push after {retry_delay} seconds...")
                 write_log(f"Retrying push after {retry_delay} seconds...")
                 time.sleep(retry_delay)
