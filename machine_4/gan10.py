@@ -14,14 +14,14 @@ from sklearn.preprocessing import PowerTransformer
 
 
 class GAN10:
-    def __init__(self, returns_df, asset_name, lambda_decay=0.5):
+    def __init__(self, returns_df, asset_name, lambda_decay=0.99):
         self.returns_df = returns_df
         self.asset_name = asset_name
         self.lambda_decay = lambda_decay  # Stronger recency bias
         os.makedirs(f"generated_returns_{self.asset_name}", exist_ok=True)
 
         parser = argparse.ArgumentParser()
-        parser.add_argument("--n_epochs", type=int, default=2000, help="number of epochs")
+        parser.add_argument("--n_epochs", type=int, default=3000, help="number of epochs")
         parser.add_argument("--batch_size", type=int, default=128, help="batch size")
         parser.add_argument("--lr_g", type=float, default=0.0002, help="learning rate generator")
         parser.add_argument("--lr_d", type=float, default=0.00005, help="learning rate discriminator")
