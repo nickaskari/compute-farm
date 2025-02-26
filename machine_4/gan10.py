@@ -14,7 +14,7 @@ from sklearn.preprocessing import PowerTransformer
 
 
 class GAN10:
-    def __init__(self, returns_df, asset_name, lambda_decay=0.99):
+    def __init__(self, returns_df, asset_name, lambda_decay=0.5):
         self.returns_df = returns_df
         self.asset_name = asset_name
         self.lambda_decay = lambda_decay  # Stronger recency bias
